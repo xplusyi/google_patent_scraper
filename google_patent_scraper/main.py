@@ -1,7 +1,5 @@
 # Scrape #
-from urllib.request import Request, urlopen
-import urllib.parse
-from urllib.error import HTTPError 
+import requests
 from bs4 import BeautifulSoup
 # json # 
 import json
@@ -55,11 +53,14 @@ class scraper_class:
         - return_abstract (bool) : boolean for whether the code should return the abstract  
 
     """
-    def __init__(self,return_abstract=False):
+    def __init__(self,return_abstract=False, return_description=False, return_claims=False):
         self.list_of_patents = []
         self.scrape_status = {}
         self.parsed_patents = {}
         self.return_abstract = return_abstract
+        self.return_description = return_description
+        self.return_claims = return_claims
+
 
     def add_patents(self, patent):
         """Append patent to patent list attribute self.list_of_patents
@@ -108,19 +109,20 @@ class scraper_class:
                                 or google patent url
 
         """
+        if not url:
+            url='https://patents.google.com/patent/{0}'.format(patent)
+        else:
+            url=patent
+        print(url)
         try:
-            if not url:
-                url='https://patents.google.com/patent/{0}'.format(patent)
-            else:
-                url=patent
-            print(url)
-            req = Request(url,headers={'User-Agent': 'Mozilla/5.0'})
-            webpage = urlopen(req).read()
-            soup = BeautifulSoup(webpage, features="lxml")
-            return(('Success',soup,url))
-        except HTTPError as e:
-            print('Patent: {0}, Error Status Code : {1}'.format(patent,e.code))
-            return(e.code,'',url)
+            headers = {'User-Agent': 'Mozilla/5.0'}
+            response = requests.get(url, headers=headers, timeout=20)
+            response.raise_for_status() # Raises HTTPError for bad responses (4xx or 5xx)
+            soup = BeautifulSoup(response.content, features="lxml")
+            return('Success', soup, url)
+        except requests.exceptions.RequestException as e:
+            print(f'Patent: {patent}, Request Error: {e}')
+            return('Request Error', '', url)
 
     def parse_citation(self,single_citation):
         """Parses patent citation, returning results as a dictionary
@@ -284,6 +286,27 @@ class scraper_class:
                 abstract_text=abstract['content']
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        #  Get description
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        description_text = ''
+        if self.return_description:
+            description_html = soup.find('section', itemprop='description')
+            if description_html:
+                # Use get_text to properly handle all child tags and formatting
+                description_text = description_html.get_text(separator='\n', strip=True)
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        #  Get claims
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        claims_text = ''
+        if self.return_claims:
+            claims_html = soup.find('section', itemprop='claims')
+            if claims_html:
+                claims_text = claims_html.get_text(separator='\n', strip=True)
+
+
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         #  Return data as a dictionary
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         return({'title': title_text,
@@ -299,7 +322,9 @@ class scraper_class:
                 'forward_cite_yes_family':json.dumps(forward_cites_yes_family),
                 'backward_cite_no_family':json.dumps(backward_cites_no_family),
                 'backward_cite_yes_family':json.dumps(backward_cites_yes_family),
-                'abstract_text':abstract_text})
+                'abstract_text':abstract_text,
+                'description_text': description_text,
+                'claims_text': claims_text})
 
     def get_scraped_data(self,soup,patent,url):
         # ~~ Parse individual patent ~~ #
@@ -328,11 +353,7 @@ class scraper_class:
                 error_status, soup, url = self.request_single_patent(patent)
                 # ~ Add scrape status variable ~ #
                 self.add_scrape_status(patent,error_status)
-                if error_status=='Success':
+                if error_status == 'Success':
                     self.parsed_patents[patent] = self.get_scraped_data(soup,patent,url)
                 else:
                     self.parsed_patents[patent] = {}
-
-
-
-
