@@ -280,10 +280,16 @@ class scraper_class:
         abstract_text=''
         if self.return_abstract:
             # Get abstract # 
-            abstract = soup.find('meta',attrs={'name':'DC.description'})
-            # Get text 
-            if abstract:
-                abstract_text=abstract['content']
+            # abstract = soup.find('meta',attrs={'name':'DC.description'})
+            # # Get text 
+            # if abstract:
+            #     abstract_text=abstract['content']
+            selector = ".abstract"
+            element = soup.select_one(selector)
+            if element:
+                abstract_text = element.text.strip()
+            else:
+                abstract_text = "hello,abstract"
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         #  Get description
@@ -300,10 +306,14 @@ class scraper_class:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         claims_text = ''
         if self.return_claims:
-            claims_html = soup.find('section', itemprop='claims')
-            if claims_html:
-                claims_text = claims_html.get_text(separator='\n', strip=True)
-
+            # claims_html = soup.find('section', itemprop='claims')
+            # if claims_html:
+            #     claims_text = claims_html.get_text(separator='\n', strip=True)
+            claims_section = soup.find("section", {"itemprop": "claims"})
+            if claims_section:
+                claims_text = claims_section.text.strip()
+            else:
+                claims_text = "world, claims!"
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

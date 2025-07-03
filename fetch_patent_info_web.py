@@ -20,7 +20,7 @@ def fetch_patent_info(patent_number: str) -> dict:
         print(f"Error fetching patent {patent_number}: {e}")
         return None
 
-    soup = BeautifulSoup(response.content, "html.parser")
+    soup = BeautifulSoup(response.content, features="html.parser")
 
     # Helper function to extract text, handling None
     def extract_text(selector):
