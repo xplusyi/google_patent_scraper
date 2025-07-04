@@ -174,6 +174,7 @@ class scraper_class:
             - forward_cites_yes_family  (json)  : forward citations that are family-to-family cites
             - backward_cites_no_family  (json)  : backward citations that are not family-to-family cites
             - backward_cites_yes_family (json)  : backward citations that are family-to-family cites
+            - classifications         (json)  : patent classifications
 
         Inputs:
             - soup (str) : html string from of google patent html
@@ -275,6 +276,26 @@ class scraper_class:
                 backward_cites_yes_family.append(self.parse_citation(citation))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        #  Get Classifications
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+        classifications = []
+        # The classification data is nested. We want the "leaf" nodes of each classification tree,
+        # which are marked with a meta tag where itemprop="Leaf" and content="true".
+        classification_items = soup.find_all('li', itemprop='classifications')
+        for item in classification_items:
+            # Check if this list item is a leaf node
+            if item.find('meta', itemprop='Leaf', content='true'):
+                try:
+                    code = item.find('span', itemprop='Code').get_text(strip=True)
+                    description = item.find('span', itemprop='Description').get_text(strip=True)
+                    classifications.append({'code': code, 'description': description})
+                except AttributeError:
+                    # Skip if the expected spans are not found, just in case
+                    continue
+        
+
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         #  Get abstract 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         abstract_text=''
@@ -289,7 +310,7 @@ class scraper_class:
             if element:
                 abstract_text = element.text.strip()
             else:
-                abstract_text = "hello,abstract"
+                abstract_text = "Abstract Failed!"
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         #  Get description
@@ -300,6 +321,8 @@ class scraper_class:
             if description_html:
                 # Use get_text to properly handle all child tags and formatting
                 description_text = description_html.get_text(separator='\n', strip=True)
+            else:
+                description_text = ""
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         #  Get claims
@@ -313,7 +336,7 @@ class scraper_class:
             if claims_section:
                 claims_text = claims_section.text.strip()
             else:
-                claims_text = "world, claims!"
+                claims_text = "Claims Failed!"
 
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
@@ -332,7 +355,8 @@ class scraper_class:
                 'forward_cite_yes_family':json.dumps(forward_cites_yes_family),
                 'backward_cite_no_family':json.dumps(backward_cites_no_family),
                 'backward_cite_yes_family':json.dumps(backward_cites_yes_family),
-                'abstract_text':abstract_text,
+                'classifications': json.dumps(classifications),
+                'abstract_text': abstract_text,
                 'description_text': description_text,
                 'claims_text': claims_text})
 

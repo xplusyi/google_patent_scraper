@@ -20,7 +20,7 @@ def fetch_patent_info(patent_number: str) -> dict:
         print(f"Error fetching patent {patent_number}: {e}")
         return None
 
-    soup = BeautifulSoup(response.content, features="html.parser")
+    soup = BeautifulSoup(response.content, features="lxml")
 
     # Helper function to extract text, handling None
     def extract_text(selector):
@@ -44,7 +44,7 @@ def main():
     """
     Main function to demonstrate the usage of get_patent_text.
     """
-    patent_number = "CN117300988"  # Example patent number
+    patent_number = "US2668287" # "CN117300988"  # Example patent number
     patent_text = fetch_patent_info(patent_number)
 
     if patent_text:
