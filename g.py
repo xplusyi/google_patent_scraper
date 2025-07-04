@@ -26,5 +26,5 @@ print( f"DESC length is: {len( patent_1_parsed['description_text'])}" )
 print( f"Abstract is: { patent_1_parsed['abstract_text'][0:20] }" )
 print( f"Claims is: { patent_1_parsed['claims_text'][0:50] }" )
 
-print('**************************')
+print('**************************\n')
 pprint(patent_1_parsed['classifications'])
