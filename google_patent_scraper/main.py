@@ -343,9 +343,9 @@ class scraper_class:
         #  Return data as a dictionary
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         return({'title': title_text,
-                'inventor_name':json.dumps(inventor_name),
-                'assignee_name_orig':json.dumps(assignee_name_orig),
-                'assignee_name_current':json.dumps(assignee_name_current),
+                'inventor_name':json.dumps(inventor_name, ensure_ascii=False),
+                'assignee_name_orig':json.dumps(assignee_name_orig, ensure_ascii=False),
+                'assignee_name_current':json.dumps(assignee_name_current, ensure_ascii=False),
                 'pub_date':pub_date,
                 'priority_date':priority_date,
                 'grant_date':grant_date,
