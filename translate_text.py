@@ -2,7 +2,6 @@
 # You can do this by running: pip install requests
 
 import requests
-import json
 import urllib.parse
 
 def translate_text(
