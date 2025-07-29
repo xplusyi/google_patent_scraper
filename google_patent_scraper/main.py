@@ -131,7 +131,7 @@ class scraper_class:
         Returns (variables returned in dictionary, following are key names):  
             - patent_number (str)  : patent number
             - priority_date (str)  : priority date of patent
-            - pub_date      (str)  : publication date of patent
+            - publication_date      (str)  : publication date of patent
 
         Inputs:
             - single_citation (str) : html string from citation section in google patent html
@@ -149,12 +149,12 @@ class scraper_class:
             priority_date = ''
         # ~ Get publication date ~ # 
         try:
-            pub_date = single_citation.find('td',itemprop='publicationDate').get_text()
+            publication_date = single_citation.find('td',itemprop='publicationDate').get_text()
         except:
-            pub_date
+            publication_date
         return({'patent_number':patent_number,
                 'priority_date':priority_date,
-                'pub_date':pub_date})
+                'publication_date':publication_date})
 
     def process_patent_html(self,soup):
         """ Parse patent html using BeautifulSoup module
@@ -166,10 +166,11 @@ class scraper_class:
             - inventor_name             (json)  : inventors of patent 
             - assignee_name_orig        (json)  : original assignees to patent
             - assignee_name_current     (json)  : current assignees to patent
-            - pub_date                  (str)   : publication date
+            - publication_date          (str)   : publication date
             - filing_date               (str)   : filing date
             - priority_date             (str)   : priority date
-            - grant_date                (str)   : grant date
+            - granted_date              (str)   : granted date
+            - legal_status              (str)   : legal status
             - forward_cites_no_family   (json)  : forward citations that are not family-to-family cites
             - forward_cites_yes_family  (json)  : forward citations that are family-to-family cites
             - backward_cites_no_family  (json)  : backward citations that are not family-to-family cites
@@ -190,38 +191,54 @@ class scraper_class:
         title_text=title['content'].rstrip()
 
         try:
-            inventor_name = [{'inventor_name':x.get_text()} for x in soup.find_all('dd',itemprop='inventor')]
+            # inventor_name = [{'inventor_name':x.get_text()} for x in soup.find_all('dd',itemprop='inventor')]
+            inventor_name = [x.get_text() for x in soup.find_all('dd',itemprop='inventor')]
         except:
             inventor_name = []
         # Assignee #
         try:
-            assignee_name_orig = [{'assignee_name':x.get_text()} for x in soup.find_all('dd',itemprop='assigneeOriginal')]
+            # assignee_name_orig = [{'assignee_name':x.get_text()} for x in soup.find_all('dd',itemprop='assigneeOriginal')]
+            assignee_name_orig = [x.get_text() for x in soup.find_all('dd',itemprop='assigneeOriginal')]
         except:
             assignee_name_orig = []
         try:
-            assignee_name_current = [{'assignee_name':x.get_text()} for x in soup.find_all('dd',itemprop='assigneeCurrent')]
+            # assignee_name_current = [{'assignee_name':x.get_text()} for x in soup.find_all('dd',itemprop='assigneeCurrent')]
+            assignee_name_current = [x.get_text().strip() for x in soup.find_all('dd',itemprop='assigneeCurrent')]
         except:
             assignee_name_current = []
           
         # Publication Date #
         try:
-            pub_date = soup.find('dd',itemprop='publicationDate').get_text()
+            publication_date = soup.find('dd',itemprop='publicationDate').get_text()
         except:
-            pub_date = ''
+            publication_date = ''
         # Application Number #
         try: 
             application_number = soup.find('dd',itemprop="applicationNumber").get_text()
         except:
             application_number = ''
+        # Publication Number #
+        try:
+            publication_number = soup.find('dd',itemprop="publicationNumber").get_text()
+        except:
+            publication_number = ''
+
         # Filing Date # 
         try:
-            filing_date = soup.find('dd',itemprop='filingDate').get_text()
+            filing_date = soup.find('span',itemprop='filingDate').get_text()
         except:
             filing_date = ''
+
+        # Leal Status #
+        try:
+            legal_status_ifi = soup.find('dd',itemprop='legalStatusIfi').get_text().strip()
+        except:
+            legal_status_ifi = ''
+
         # Loop through all events #
         list_of_application_events = soup.find_all('dd',itemprop='events')
         priority_date = ''
-        grant_date = ''
+        granted_date = ''
         expiration_date = ''
         for app_event in list_of_application_events:
             # Get information #
@@ -231,9 +248,9 @@ class scraper_class:
                 if title_info == 'priority':
                     priority_date = timeevent
                 if title_info == 'granted':
-                    grant_date = timeevent
-                if title_info == 'publication' and pub_date=='':
-                    pub_date = timeevent
+                    granted_date = timeevent
+                if title_info == 'publication' and publication_date=='':
+                    publication_date = timeevent
                 if 'expiration' in app_event.find('span',itemprop='title').get_text().lower():
                     expiration_date = timeevent
 
@@ -343,18 +360,21 @@ class scraper_class:
         #  Return data as a dictionary
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
         return({'title': title_text,
-                'inventor_name':json.dumps(inventor_name, ensure_ascii=False),
-                'assignee_name_orig':json.dumps(assignee_name_orig, ensure_ascii=False),
-                'assignee_name_current':json.dumps(assignee_name_current, ensure_ascii=False),
-                'pub_date':pub_date,
-                'priority_date':priority_date,
-                'grant_date':grant_date,
-                'filing_date':filing_date,
+                'inventor_name': json.dumps(inventor_name, ensure_ascii=False),
+                'assignee_name_orig': json.dumps(assignee_name_orig, ensure_ascii=False),
+                'assignee_name_current': json.dumps(assignee_name_current, ensure_ascii=False),
+                'publication_date': publication_date,
+                'priority_date': priority_date,
+                'granted_date': granted_date,
+                'legal_status' : legal_status_ifi,
+                'filing_date': filing_date,
+                'application_number': application_number,
+                'publication_number': publication_number,
                 'expiration_date': expiration_date,
-                'forward_cite_no_family':json.dumps(forward_cites_no_family),
-                'forward_cite_yes_family':json.dumps(forward_cites_yes_family),
-                'backward_cite_no_family':json.dumps(backward_cites_no_family),
-                'backward_cite_yes_family':json.dumps(backward_cites_yes_family),
+                'forward_cite_no_family': json.dumps(forward_cites_no_family),
+                'forward_cite_yes_family': json.dumps(forward_cites_yes_family),
+                'backward_cite_no_family': json.dumps(backward_cites_no_family),
+                'backward_cite_yes_family': json.dumps(backward_cites_yes_family),
                 'classifications': json.dumps(classifications),
                 'abstract_text': abstract_text,
                 'description_text': description_text,
